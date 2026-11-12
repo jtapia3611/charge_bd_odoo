@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bd2.sh — Restaurador y Neutralizador de BD Odoo</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --border: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --primary: #38bdf8;
+            --primary-dark: #0284c7;
+            --accent: #a855f7;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --code-bg: #090d16;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding-bottom: 4rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 3rem 1.5rem;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--primary);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            color: var(--muted);
+            max-width: 680px;
+            margin: 0 auto;
+            font-size: 1.05rem;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 2.5rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Generador Interactivo */
+        .builder-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.75rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .builder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        input, select {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.7rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+        }
+
+        .command-output-wrapper {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .command-text {
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            color: var(--primary);
+            font-size: 1rem;
+            word-break: break-all;
+        }
+
+        .btn-copy {
+            background: var(--primary);
+            color: #0f172a;
+            border: none;
+            padding: 0.55rem 1rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-copy:hover {
+            background: #7dd3fc;
+        }
+
+        .mode-hint {
+            margin-top: 0.85rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        /* Tarjetas de modos */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.35rem;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .tag {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: var(--code-bg);
+            color: var(--primary);
+            padding: 0.15rem 0.55rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .card p {
+            color: var(--muted);
+            font-size: 0.92rem;
+            margin-bottom: 0.9rem;
+        }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            padding: 0.75rem 0.9rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            overflow-x: auto;
+        }
+
+        /* Tabla de neutralización */
+        .table-wrapper {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 0.9rem 1.1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.92rem;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        code {
+            font-family: monospace;
+            background: var(--code-bg);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #38bdf8;
+            font-size: 0.86rem;
+        }
+
+        .pill-ok {
+            color: var(--success);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <span class="badge">Odoo 15 · 16 · 17 · 18 · 19 · 20</span>
+        <h1>🗄️ bd2.sh — Guía Interactiva</h1>
+        <p>
+            Automatiza la descarga, restauración y neutralización segura de bases de datos Odoo en PostgreSQL local
+            desde archivos <code>.zip</code>, <code>.sql</code>, <code>.dump</code> o instaladores <code>.sh</code> de Deploy Manager.
+        </p>
+    </div>
+</header>
+
+<main class="container">
+
+    <!-- Generador Interactivo de Comandos -->
+    <section class="builder-card">
+        <h2 style="margin-bottom: 1rem; font-size: 1.25rem;">⚡ Generador Interactivo de Comando</h2>
+        <div class="builder-grid">
+            <div class="field-group">
+                <label for="modeSelect">Modo de carga</label>
+                <select id="modeSelect">
+                    <option value="file">Instalador Deploy (.sh) — [-file]</option>
+                    <option value="zip">Archivo ZIP (dump.sql) — [Por defecto]</option>
+                    <option value="zip_files">Archivo ZIP + Filestore — [-f]</option>
+                    <option value="sql">Archivo SQL directo (.sql) — [-sql]</option>
+                    <option value="dump">Archivo DUMP / PGC (.dump) — [-dump]</option>
+                    <option value="config">Solo neutralizar BD existente — [-config]</option>
+                    <option value="doc">Abrir esta guía web — [-doc]</option>
+                </select>
+            </div>
+            <div class="field-group" id="dbNameGroup">
+                <label for="dbNameInput">Nombre de la BD local</label>
+                <input type="text" id="dbNameInput" placeholder="mi_proyecto_local" value="mi_proyecto_local" />
+            </div>
+            <div class="field-group" id="shFileGroup">
+                <label for="shFileInput">Archivo instalador (.sh)</label>
+                <input type="text" id="shFileInput" placeholder="install-instancia_2026-11-12.sh" value="install-instancia_2026-11-12.sh" />
+            </div>
+            <div class="field-group" id="portGroup">
+                <label for="portInput">Puerto PostgreSQL</label>
+                <input type="number" id="portInput" placeholder="5432" value="5432" />
+            </div>
+        </div>
+
+        <div class="command-output-wrapper">
+            <span class="command-text" id="generatedCommand">./bd2.sh mi_proyecto_local -file install-instancia_2026-11-12.sh</span>
+            <button class="btn-copy" id="copyBtn" onclick="copyCommand()">📋 Copiar comando</button>
+        </div>
+        <p class="mode-hint" id="modeHint">
+            💡 Extrae <code>RESTORE_TOKEN</code> y <code>RESTORE_URL</code> del script instalador, descarga únicamente la BD en local (sin filestore, sin clonar código y sin levantar contenedores) y aplica todas las neutralizaciones.
+        </p>
+    </section>
+
+    <!-- Modos disponibles -->
+    <h2 class="section-title">🚀 Modos de Ejecución</h2>
+    <div class="cards-grid">
+        <div class="card">
+            <h3>Instalador .sh <span class="tag">-file / --file</span></h3>
+            <p>Toma un archivo <code>install-*.sh</code> descargado del Deploy Manager y restaura solo la base de datos en tu PostgreSQL local.</p>
+            <pre>./bd2.sh -file install-instancia.sh
+./bd2.sh mi_bd -file install-instancia.sh</pre>
+        </div>
+
+        <div class="card">
+            <h3>Archivo ZIP <span class="tag">por defecto / -f</span></h3>
+            <p>Descomprime <code>~/Downloads/nombre_bd.zip</code>, restaura el SQL interno y opcionalmente copia el <code>filestore</code> con <code>-f</code>.</p>
+            <pre>./bd2.sh mi_bd
+./bd2.sh mi_bd -f</pre>
+        </div>
+
+        <div class="card">
+            <h3>SQL Directo <span class="tag">-sql / --sql</span></h3>
+            <p>Carga directamente <code>~/Downloads/nombre_bd.sql</code> sin descomprimir archivos ni tocar el filestore.</p>
+            <pre>./bd2.sh mi_bd -sql</pre>
+        </div>
+
+        <div class="card">
+            <h3>DUMP / PGC Binario <span class="tag">-dump / --dump</span></h3>
+            <p>Restaura archivos <code>PGDMP</code> con <code>pg_restore -j 4</code>. Detecta soporte <code>zstd</code> automáticamente o usa Docker como respaldo.</p>
+            <pre>./bd2.sh mi_bd -dump</pre>
+        </div>
+
+        <div class="card">
+            <h3>Solo Neutralizar <span class="tag">-config</span></h3>
+            <p>Ejecuta únicamente las reglas de neutralización, credenciales de prueba y limpieza de assets sobre una BD que ya existe.</p>
+            <pre>./bd2.sh mi_bd -config</pre>
+        </div>
+
+        <div class="card">
+            <h3>Validación Inteligente <span class="tag">Automático</span></h3>
+            <p>Verifica los encabezados reales del archivo (<code>PGDMP</code>, <code>ZIP</code>, <code>SQL</code>, <code>SH</code>) antes de borrar la BD y sugiere el comando correcto si no coincide.</p>
+            <pre>./bd2.sh -doc   # Abre esta guía</pre>
+        </div>
+    </div>
+
+    <!-- Qué neutraliza -->
+    <h2 class="section-title">🛡️ Neutralización Automática (SQL Directo, sin cintillo)</h2>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Componente</th>
+                    <th>Tabla / Parámetro</th>
+                    <th>Acción Aplicada</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>UUID y Secreto de BD</strong></td>
+                    <td><code>ir_config_parameter</code></td>
+                    <td>Regenera <code>database.uuid</code> y <code>database.secret</code> con <code>gen_random_uuid()</code> y elimina <code>database.enterprise_code</code>.</td>
+                </tr>
+                <tr>
+                    <td><strong>Accesos de Desarrollo</strong></td>
+                    <td><code>res_users</code></td>
+                    <td>Establece <code>login = 'admin'</code> (id=2) y contraseña <code>1</code> para los usuarios; reemplaza correos y teléfonos en <code>res_partner</code>.</td>
+                </tr>
+                <tr>
+                    <td><strong>Correos y Colas</strong></td>
+                    <td><code>ir_mail_server</code>, <code>fetchmail_server</code>, <code>mail_mail</code></td>
+                    <td>Elimina servidores SMTP salientes, desactiva servidores entrantes, limpia colas pendientes y desvincula plantillas.</td>
+                </tr>
+                <tr>
+                    <td><strong>Tareas Programadas</strong></td>
+                    <td><code>ir_cron</code></td>
+                    <td>Desactiva todos los crons (<code>active = false</code>) para evitar ejecuciones automáticas en local.</td>
+                </tr>
+                <tr>
+                    <td><strong>Facturación PAC (MX)</strong></td>
+                    <td><code>res_company</code> (<code>edi</code> / <code>cfdi</code>)</td>
+                    <td>Configura automáticamente las credenciales de prueba de Solución Factible (<code>test_env = true</code>).</td>
+                </tr>
+                <tr>
+                    <td><strong>IAP, OAuth, Pagos y Webhooks</strong></td>
+                    <td><code>iap_account</code>, <code>auth_oauth_provider</code>, <code>payment_provider</code></td>
+                    <td>Deshabilita tokens IAP (<code>+disabled</code>), proveedores OAuth, pasarelas de pago productivas, dominios de Website y webhooks.</td>
+                </tr>
+                <tr>
+                    <td><strong>Assets y Sesiones</strong></td>
+                    <td><code>ir_asset</code>, <code>ir_attachment</code>, <code>ir_module_module</code></td>
+                    <td>Limpia assets compilados (<code>/web/assets/%</code>, <code>/_custom/%</code>) y desinstala <code>solt_session_valkey</code> si viene del instalador.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</main>
+
+<script>
+    const modeSelect = document.getElementById('modeSelect');
+    const dbNameInput = document.getElementById('dbNameInput');
+    const shFileInput = document.getElementById('shFileInput');
+    const portInput = document.getElementById('portInput');
+    const shFileGroup = document.getElementById('shFileGroup');
+    const dbNameGroup = document.getElementById('dbNameGroup');
+    const portGroup = document.getElementById('portGroup');
+    const generatedCommand = document.getElementById('generatedCommand');
+    const modeHint = document.getElementById('modeHint');
+
+    const hints = {
+        file: '💡 Extrae RESTORE_TOKEN y RESTORE_URL del script instalador, descarga únicamente la BD en local (sin filestore, sin clonar código y sin levantar contenedores) y aplica todas las neutralizaciones.',
+        zip: '💡 Busca ~/Downloads/<nombre_bd>.zip, extrae el archivo SQL y restaura la base de datos neutralizada.',
+        zip_files: '💡 Restaura la base de datos desde ~/Downloads/<nombre_bd>.zip y además copia la carpeta filestore a tu ruta local de Odoo.',
+        sql: '💡 Restaura directamente desde ~/Downloads/<nombre_bd>.sql sin descomprimir archivos.',
+        dump: '💡 Restaura directamente desde ~/Downloads/<nombre_bd>.dump usando pg_restore con soporte automático para compresión zstd.',
+        config: '💡 No borra ni restaura la base de datos; únicamente ejecuta las consultas de neutralización y configuración PAC sobre la BD actual.',
+        doc: '💡 Abre esta documentación interactiva directamente desde la terminal.'
+    };
+
+    function updateCommand() {
+        const mode = modeSelect.value;
+        const db = dbNameInput.value.trim();
+        const shFile = shFileInput.value.trim() || 'install-instancia.sh';
+        const port = portInput.value.trim();
+        const portFlag = (port && port !== '5432') ? ` -p ${port}` : '';
+
+        shFileGroup.style.display = mode === 'file' ? 'flex' : 'none';
+        dbNameGroup.style.display = mode === 'doc' ? 'none' : 'flex';
+        portGroup.style.display = mode === 'doc' ? 'none' : 'flex';
+
+        let cmd = './bd2.sh';
+        if (mode === 'doc') {
+            cmd = './bd2.sh -doc';
+        } else if (mode === 'file') {
+            cmd = db ? `./bd2.sh ${db} -file ${shFile}${portFlag}` : `./bd2.sh -file ${shFile}${portFlag}`;
+        } else {
+            const targetDb = db || 'mi_proyecto_local';
+            const flags = {
+                zip: '',
+                zip_files: ' -f',
+                sql: ' -sql',
+                dump: ' -dump',
+                config: ' -config'
+            };
+            cmd = `./bd2.sh ${targetDb}${flags[mode]}${portFlag}`;
+        }
+
+        generatedCommand.textContent = cmd;
+        modeHint.innerHTML = hints[mode];
+    }
+
+    function copyCommand() {
+        const text = generatedCommand.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('copyBtn');
+            const original = btn.textContent;
+            btn.textContent = '✅ ¡Copiado!';
+            setTimeout(() => { btn.textContent = original; }, 1800);
+        });
+    }
+
+    modeSelect.addEventListener('change', updateCommand);
+    dbNameInput.addEventListener('input', updateCommand);
+    shFileInput.addEventListener('input', updateCommand);
+    portInput.addEventListener('input', updateCommand);
+    updateCommand();
+</script>
+
+</body>
+</html>
