@@ -294,6 +294,7 @@ show_help() {
     echo ""
     echo "   • Usando ruta completa al archivo .sh y puerto personalizado:"
     echo "     $0 mi_bd_local --file ~/Downloads/install-mi_instancia_2026-11-12_16-39-36.sh -p 5432"
+    echo "🔗 Documentación interactiva: https://jtapia3611.github.io/charge_bd_odoo/"
     echo "======================================================================"
     exit 0
 }
